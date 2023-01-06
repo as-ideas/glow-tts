@@ -5,6 +5,8 @@ import argparse
 import logging
 import json
 import subprocess
+from pathlib import Path
+
 import numpy as np
 from scipy.io.wavfile import read
 import torch
@@ -138,6 +140,9 @@ def load_wav_to_torch(full_path):
 def load_filepaths_and_text(filename, split="|"):
   with open(filename, encoding='utf-8') as f:
     filepaths_and_text = [line.strip().split(split) for line in f]
+  print('filtering ids, len: ', len(filepaths_and_text))
+  filepaths_and_text = [(a, b) for a, b in filepaths_and_text if Path(b).is_file()]
+  print('after filtering, len: ', len(filepaths_and_text))
   return filepaths_and_text
 
 

@@ -9,8 +9,6 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import torch.multiprocessing as mp
 import torch.distributed as dist
-from apex.parallel import DistributedDataParallel as DDP
-from apex import amp
 
 from data_utils import TextMelLoader, TextMelCollate
 import models
@@ -111,18 +109,14 @@ def train(rank, epoch, hps, generator, optimizer_g, train_loader, logger, writer
     loss_gs = [l_mle, l_length]
     loss_g = sum(loss_gs)
 
-    if hps.train.fp16_run:
-      with amp.scale_loss(loss_g, optimizer_g._optim) as scaled_loss:
-        scaled_loss.backward()
-      grad_norm = commons.clip_grad_value_(amp.master_params(optimizer_g._optim), 5)
-    else:
-      loss_g.backward()
-      grad_norm = commons.clip_grad_value_(generator.parameters(), 5)
+
+    loss_g.backward()
+    grad_norm = commons.clip_grad_value_(generator.parameters(), 5)
     optimizer_g.step()
     
     if rank==0:
       if batch_idx % hps.train.log_interval == 0:
-        (y_gen, *_), *_ = generator.module(x[:1], x_lengths[:1], gen=True)
+        (y_gen, *_), *_ = generator(x[:1], x_lengths[:1], gen=True)
         logger.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
           epoch, batch_idx * len(x), len(train_loader.dataset),
           100. * batch_idx / len(train_loader),

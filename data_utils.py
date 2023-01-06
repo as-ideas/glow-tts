@@ -1,4 +1,6 @@
 import random
+
+import librosa
 import numpy as np
 import torch
 import torch.utils.data
@@ -41,14 +43,15 @@ class TextMelLoader(torch.utils.data.Dataset):
 
     def get_mel(self, filename):
         if not self.load_mel_from_disk:
-            audio, sampling_rate = load_wav_to_torch(filename)
-            if sampling_rate != self.stft.sampling_rate:
-                raise ValueError("{} {} SR doesn't match target {} SR".format(
-                    sampling_rate, self.stft.sampling_rate))
-            if self.add_noise:
-                audio = audio + torch.rand_like(audio)
-            audio_norm = audio / self.max_wav_value
-            audio_norm = audio_norm.unsqueeze(0)
+            #audio, sampling_rate = load_wav_to_torch(filename)
+            #if sampling_rate != self.stft.sampling_rate:
+            #    librosa.resample(audio, source_sr=sampling_rate, target_sr=self.stft.sampling_rate)
+            #    raise ValueError("{} {} SR doesn't match target {} SR".format(
+            #        sampling_rate, self.stft.sampling_rate))
+            audio, _ = librosa.load(filename)
+            audio = torch.from_numpy(audio).float()
+            #audio_norm = audio / self.max_wav_value
+            audio_norm = audio.unsqueeze(0)
             melspec = self.stft.mel_spectrogram(audio_norm)
             melspec = torch.squeeze(melspec, 0)
         else:

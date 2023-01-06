@@ -3,21 +3,21 @@ import re
 from text import cleaners
 from text.symbols import phonemes
 
+class Tokenizer:
 
-# Mappings from symbol to numeric ID and vice versa:
-_symbol_to_id = {s: i for i, s in enumerate(phonemes)}
-_id_to_symbol = {i: s for i, s in enumerate(phonemes)}
+  def __init__(self) -> None:
+    self.symbol_to_id = {s: i for i, s in enumerate(phonemes)}
+    self.id_to_symbol = {i: s for i, s in enumerate(phonemes)}
 
-# Regular expression matching text enclosed in curly braces:
-_curly_re = re.compile(r'(.*?)\{(.+?)\}(.*)')
+  def __call__(self, text: str) -> List[int]:
+    return [self.symbol_to_id[t] for t in text if t in self.symbol_to_id]
+
+  def decode(self, sequence: List[int]) -> str:
+    text = [self.id_to_symbol[s] for s in sequence if s in self.id_to_symbol]
+    return ''.join(text)
 
 
-def get_arpabet(word, dictionary):
-  word_arpabet = dictionary.lookup(word)
-  if word_arpabet is not None:
-    return "{" + word_arpabet[0] + "}"
-  else:
-    return word
+tokenizer = Tokenizer()
 
 
 def text_to_sequence(text, cleaner_names, dictionary=None):
@@ -34,34 +34,8 @@ def text_to_sequence(text, cleaner_names, dictionary=None):
     Returns:
       List of integers corresponding to the symbols in the text
   '''
-  sequence = []
 
-  space = _symbols_to_sequence(' ')
-  # Check for curly braces and treat their contents as ARPAbet:
-  while len(text):
-    m = _curly_re.match(text)
-    if not m:
-      clean_text = _clean_text(text, cleaner_names)
-      if dictionary is not None:
-        clean_text = [get_arpabet(w, dictionary) for w in clean_text.split(" ")]
-        for i in range(len(clean_text)):
-          t = clean_text[i]
-          if t.startswith("{"):
-            sequence += _arpabet_to_sequence(t[1:-1])
-          else:
-            sequence += _symbols_to_sequence(t)
-          sequence += space
-      else:
-        sequence += _symbols_to_sequence(clean_text)
-      break
-    sequence += _symbols_to_sequence(_clean_text(m.group(1), cleaner_names))
-    sequence += _arpabet_to_sequence(m.group(2))
-    text = m.group(3)
-  
-  # remove trailing space
-  if dictionary is not None:
-    sequence = sequence[:-1] if sequence[-1] == space[0] else sequence
-  return sequence
+  return tokenizer(text)
 
 
 def sequence_to_text(sequence):

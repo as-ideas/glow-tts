@@ -1,5 +1,8 @@
 """ from https://github.com/keithito/tacotron """
 import re
+
+from typing import List
+
 from text import cleaners
 from text.symbols import phonemes
 
